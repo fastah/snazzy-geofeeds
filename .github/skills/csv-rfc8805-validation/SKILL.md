@@ -1,6 +1,6 @@
 ---
 name: csv-rfc8805-validation
-description: Checks the CSV structure
+description: Syntax checker for the CSV structure on an IP geofeed file - first pass validation.
 ---
 
 # Skill Instructions
