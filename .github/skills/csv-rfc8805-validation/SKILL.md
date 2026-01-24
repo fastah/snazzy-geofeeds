@@ -1,10 +1,11 @@
 ---
 name: csv-rfc8805-validation
-description: Validates CSV-format IP geofeed files against RFC 8805 syntax standards. Use when processing or debugging IP geolocation feeds to ensure valid CSV structure and RFC 8805 compliance.
+description: Validates CSV-format IP geofeed files against RFC 8805 syntax standards, but not semantics. Use when processing or debugging IP geolocation feeds to ensure valid CSV structure and RFC 8805 compliance.
 license: Apache-2.0
 metadata:
   author: Sid Mathur <support@getfastah.com>
   version: "0.1"
+allowed-tools: Bash(csvcut:*) Bash(csvgrep:*)
 ---
 
 # RFC 8805 IP Geofeed CSV Syntax Validation
