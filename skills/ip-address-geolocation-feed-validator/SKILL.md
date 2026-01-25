@@ -79,21 +79,28 @@ Read Section 1 ("Introduction") and Section 2 ("Self-Published IP Geolocation Fe
 
 Validate geolocation information, accuracy, place names, and ISO codes.
 
+### Locally-available data tables
+
+- [`assets/iso3166-1.json`](assets/iso3166-1.json): JSON array of countries/territories with ISO codes. Each object has a 2-letter country code in `alpha_2`. This is the superset of valid `alpha2code` values in an RFC 8805 CSV. Other attributes include `flag` (flag emoji) and `name` (short name).
+
+- [`assets/iso3166-2.json`](assets/iso3166-2.json): JSON array of subdivisions with ISO-assigned 2- or 3-letter codes. Each object has `code` (e.g., `US-CA`), which is the superset of valid `region` values in an RFC 8805 CSV. `name` is the short name.
+
 ### Country code validation
 
-- Validate `alpha2code` against `assets/iso3166-1.json`.
-- Flag unknown codes as ERROR.
+- Validate `alpha2code` (RFC 8805 Section 2.1.1.2) against [`assets/iso3166-1.json`](assets/iso3166-1.json), specifically the `alpha_2` JSON attribute. Sample code snippets are available in [references/snippets-*.md](references).
+- Flag an `alpha2code` not in the data file's `alpha_2` set as ERROR. Flag an empty `alpha2code` as WARNING (the RFC allows empty values when geolocation should not be attempted, e.g., for routers).
 
 ### Region code validation
 
-- If a region is provided, validate that the format matches `{COUNTRY}-{SUBDIVISION}` (e.g., `US-CA`, `AU-NSW`).
-- Validate against `assets/iso3166-2.json`.
+- If a `region` is provided (RFC 8805 Section 2.1.1.3), validate that the format matches `{COUNTRY}-{SUBDIVISION}` (e.g., `US-CA`, `AU-NSW`).
+- Validate against [`assets/iso3166-2.json`](assets/iso3166-2.json), matching the `code` JSON attribute (already prefixed with the country code).
 
 ### City name validation
 
 - Flag placeholder values as ERROR: `undefined`, `Please select`, `null`, `N/A`, `TBD`, `unknown`.
 - Flag truncated/abbreviated names or airport codes as ERROR: `LA`, `Frft`, `sin01`, `LHR`, `SIN`, `MAA`.
 - Flag inconsistent casing as WARNING: `HongKong` vs `Hong Kong` vs `香港`.
+- There is no built-in dataset for validating city names, but an MCP server is planned.
 
 ## Phase 5: Best practices scan
 
