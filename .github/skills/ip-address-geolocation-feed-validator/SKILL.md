@@ -1,6 +1,6 @@
 ---
 name: ip-address-geolocation-feed-validator
-description: Helps author and validate, a CSV-format IP-based geolocation feed file against the Internet standard RFC 8805 and current best practices.
+description: Helps author and validate, a CSV-format IP-based geolocation feed file against the RFC 8805 and current best practices.
 license: Apache-2.0
 metadata:
   author: Sid Mathur <support@getfastah.com>
