@@ -100,17 +100,59 @@ Validate geolocation information, accuracy, place names, and ISO codes.
 - Flag placeholder values as ERROR: `undefined`, `Please select`, `null`, `N/A`, `TBD`, `unknown`.
 - Flag truncated/abbreviated names or airport codes as ERROR: `LA`, `Frft`, `sin01`, `LHR`, `SIN`, `MAA`.
 - Flag inconsistent casing as WARNING: `HongKong` vs `Hong Kong` vs `香港`.
-- There is no built-in dataset for validating city names at this time. 
+- There is no built-in dataset for validating city names at this time.
 
 ## Phase 5: Best practices scan
 
-- Suggest aggregation for consecutive single-host entries (/32, /31).
-- Recommend adding region codes when a city is specified.
+- Recommend adding region codes when a city is specified; exclude small-sized territories (by size or population) where the use of state/provinces isn't common (e.g SG, AQ, CK).
+- Recommend confirmation from the user when a subnet is left unspecified for all geographical columns, do they really wish for the world to not geolocate it (literal interpretation of RFC 8805)? Or is it that they forget to specify the country,state,city names for it?
 
 ## Phase 6: Output format
 
-Generate a validation report containing:
+Generate an HTML validation report with the following structure. Use modern web standards (HTML5, and W3C Web APIs) with inline CSS to create minimal file clutter. OK to generate inline HTML report if the UI supports it; otherwise write out the .html to the working directory or open it for the user using the default open-with-browser system action.
 
-- Summary statistics (error/warning/info counts).
-- Per-entry validation table (HTML or Markdown).
-- Actionable recommendations list.
+### 1. Summary header
+
+Display rolled-up statistics at the top:
+
+- Total entries processed
+- Counts by severity: ERROR, WARNING, INFO (valid entries)
+- Feed metadata: filename, timestamp, IPv4/IPv6 entry counts
+- Geographical accuracy stats - subnets with city-level accuracy, with state-only accuracy, with country-level accurarcy, and "do not geolocate" signalling.
+
+### 2. Results table
+
+Render a table with one row per CSV entry. Columns:
+
+| Column | Description |
+|--------|-------------|
+| Line | Original CSV line number |
+| IP Prefix | The subnet in CIDR notation |
+| Country | `alpha2code` with flag emoji if valid |
+| Region | `region` code |
+| City | City name |
+| Status | ERROR / WARNING / INFO |
+| Messages | Validation messages for this entry. Inferred geographical accuracy. |
+
+### 3. Row grouping and styling
+
+Group rows by severity for user triage:
+
+- **ERROR** (red): Invalid entries requiring fixes before publication
+- **WARNING** (yellow): Entries that may need review
+- **INFO** (green): Valid entries with optional suggestions
+
+Use collapsible sections so users can hide INFO rows and focus on problems.
+
+### 4. Actionable recommendations
+
+End with a numbered list of specific fixes, e.g.:
+
+1. "Line 42: Replace country code `UK` with `GB`"
+2. Any other observations and comments.
+
+---
+
+**TODO: Clarify the following before implementation:**
+
+- TODO: Add "Copy to clipboard" button for exporting valid 4-column CSV data
