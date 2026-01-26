@@ -100,11 +100,10 @@ Validate geolocation information, accuracy, place names, and ISO codes.
 - Flag placeholder values as ERROR: `undefined`, `Please select`, `null`, `N/A`, `TBD`, `unknown`.
 - Flag truncated/abbreviated names or airport codes as ERROR: `LA`, `Frft`, `sin01`, `LHR`, `SIN`, `MAA`.
 - Flag inconsistent casing as WARNING: `HongKong` vs `Hong Kong` vs `香港`.
-- There is no built-in dataset for validating city names, but an MCP server is planned.
+- There is no built-in dataset for validating city names at this time. 
 
 ## Phase 5: Best practices scan
 
-- Flag overlapping subnets (e.g., /27 and /26 for the same base IP).
 - Suggest aggregation for consecutive single-host entries (/32, /31).
 - Recommend adding region codes when a city is specified.
 

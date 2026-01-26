@@ -1,12 +1,19 @@
 # AI skills for IP Geolocation feeds - authoring, validating, and publication
 
-Self-help resources from Siddharth "Sid" Mathur's talk at [NANOG 96](https://nanog.org/events/nanog-96/) San Francisco - [High-quality IP Geofeeds using AI Coding Assistants and MCP](https://nanog.org/events/nanog-96/content/5683/).
+This package has self-help resources from Siddharth "Sid" Mathur's talk at [NANOG 96](https://nanog.org/events/nanog-96/) San Francisco - [High-quality IP Geofeeds using AI Coding Assistants and MCP](https://nanog.org/events/nanog-96/content/5683/).
+
+AI coding agents should be asked to read IP geolocation feed validation guidance in [SKILL.md](skills/validator/SKILL.md).
 
 ## Pre-requisites
 
-- Visual Studio Code - enable the [experimental `chat.useAgentSkills`](vscode://settings/chat.useAgentSkills) feature, see [Agent Skills help](https://code.visualstudio.com/docs/copilot/customization/agent-skills).
+- IDE - [Visual Studio Code](https://code.visualstudio.com).
+- If using [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat), enable the experimental [`chat.useAgentSkills`](vscode://settings/chat.useAgentSkills) feature, see [Agent Skills help](https://code.visualstudio.com/docs/copilot/customization/agent-skills). Related [VS Code config file](.vscode/settings.json).
 
-- Claude - [turn on Skills in Settings -> Capabilities](https://support.claude.com/en/articles/12512180-using-skills-in-claude). Enterprise users must also enable `Code execution and file creation`. Claude Code supports Skills in beta.
+- If using [Claude](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code) - turn on [Skills in Settings -> Capabilities](https://support.claude.com/en/articles/12512180-using-skills-in-claude). Enterprise users must also enable `Code execution and file creation`. Claude Code supports Skills in beta.
+
+- If using [ChatGPT Codex](https://marketplace.visualstudio.com/items?itemName=openai.chatgpt), enable [Skills](https://developers.openai.com/codex/skills/) with the `[[skills.config]]` flag.
+
+- Tools on Windows: Use the Microsoft Store for self-updating [VS Code](https://apps.microsoft.com/detail/xp9khm4bk9fz7q?hl=en-US&gl=US), [Python](https://apps.microsoft.com/detail/9mz1snwt0n5d?hl=en-US&gl=US), and [PowerShell](https://apps.microsoft.com/detail/9mz1snwt0n5d?hl=en-US&gl=US).
 
 ## Quick guide
 
@@ -30,22 +37,30 @@ Or simply ask Amp to validate a geofeed and it will auto-select the skill.
 
 Clone this repository into your workspace, and the skill will be discovered automatically from the `skills/` directory.
 
-## What are Agent Skills
+## What are (AI) Agent Skills
 
-From the [VS Code help page on Skills](https://code.visualstudio.com/docs/copilot/customization/agent-skills#_how-copilot-uses-skills):
+AI [Agent Skills](https://agentskills.io/home) is an open standard that works across multiple AI tools to make domain-specific knowledge easier to share - which in this repository's case is IP Geolocation feed validation. 
 
-> Agent Skills standard
-Agent Skills is an open standard that enables portability across different AI agents. Skills you create in VS Code work with multiple agents, including:
+Partial list of AI tools that support Agent Skills:
 
-    GitHub Copilot in VS Code: Available in chat and agent mode
-    GitHub Copilot CLI: Accessible when working in the terminal
-    GitHub Copilot coding agent: Used during automated coding tasks
-
-> Learn more about the Agent Skills standard at agentskills.io.
-
-
+- [GitHub Copilot](https://code.visualstudio.com/docs/copilot/customization/agent-skills) - VS Code, Copilot CLI, coding agent
+- [Cursor](https://cursor.com/docs/context/skills)
+- [Claude Code](https://code.claude.com/docs/en/skills)
+- [Amp Code](https://ampcode.com/news/agent-skills) - VS Code and Amp CLI
 
 ## Troubleshooting
 
-1. VS Code configuration - Did you turn ON the experimental Agent Skills flag?
-    ![image](https://github.com/user-attachments/assets/74ce679b-5bfa-4b92-a1a8-967dfd248ee0)
+1. VS Code - turn ON the experimental Agent Skills flag ([config](.vscode/settings.json)).
+
+## Recommended Extensions
+
+### VS Code
+
+These are automatically suggested via the included [extensions hint](.vscode/extensions.json).
+
+| Extension | Publisher | Purpose |
+|-----------|-----------|---------|
+| [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python) | Microsoft | Python configuration + syntax highlighting |
+| [Go](https://marketplace.visualstudio.com/items?itemName=golang.go) | Go Team at Google | Go (Golang.org) configuration + syntax highlighting |
+| [Rainbow CSV](https://marketplace.visualstudio.com/items?itemName=mechatroner.rainbow-csv) | mechatroner | CSV syntax highlighting |
+| [PowerShell](https://marketplace.visualstudio.com/items?itemName=ms-vscode.PowerShell) | Microsoft | [Windows only] Modern scripting system |
