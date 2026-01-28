@@ -26,21 +26,48 @@ This skill validates an IP geolocation feed provided in CSV format by ensuring t
 - **Do not use** this skill for private or internal IP address management; it applies **only to publicly routable IP addresses**.
 
 
-## Prerequisite: CLI tools and/or languages
+## Prerequisite: CLI Tools and/or Languages
 
-1. Ensure [`csvkit` v2](https://csvkit.readthedocs.io/en/latest/index.html), the Python-powered CLI suite for CSV manipulation is installed and ready for invocation. `csvkit` is *best installed via `pipx`; system pip installs are discouraged*. For OS-specific guidance, read [INSTALL-GUIDE-CSVKIT.md](references/INSTALL-GUIDE-CSVKIT.md).
-    - Verify that the `csvkit` suite's binaries are callable from the CLI; for example `csvcut` should report version `2.x.y` to stdout when called as follows:
+- **Python** is required.
 
-        ```shell
-        csvcut --version
-        ```
+## Processing Pipeline: Sequential Phase Execution
 
-2. If unable to use `csvkit`, write `Go` programs using the guidance in [snippets-golang-go.md](references/snippets-golang-go.md), or `Python` scripts using [snippets-python3.md](references/snippets-python3.md).
+- All phases of the skill must be executed **in order**, from Phase 1 through Phase 6.
+- Each phase depends on the successful completion of the previous phase.  
+  - For example, **syntax and input validation** must complete before **semantic validation** can run.
 
-## Execution Flow
+- The phases are:
 
-Run all phases **sequentially**, in order.  
-Each phase must complete successfully before moving to the next phase.
+  - **Phase 1: Deep Research**  
+    Understand RFC 8805 requirements for self-published IP geolocation feeds.
+
+  - **Phase 2: User Input**  
+    Collect IP subnet data from local files or remote URLs.
+
+  - **Phase 3: Syntax Validation**  
+    Validate CSV format, structure, and IP subnet correctness.
+
+  - **Phase 4: Semantic Validation**  
+    Validate country codes, region codes, city names, and postal code rules.
+
+  - **Phase 5: Best Practices Scan**  
+    Recommend missing region codes, confirm user intent for unspecified subnets, and enforce best practices.
+
+  - **Phase 6: HTML Report Generation**  
+    Generate a **HTML report** summarizing validation results, errors, and warnings.
+
+- **Validation Script Generation**
+  - Generate a **single validation script** that incorporates **all steps from Phases 3–6**.
+  - Store the generated script in the `./scripts` directory.
+  - The script must include:
+    - CSV and IP syntax checks (Phase 3).
+    - Semantic validations including country, region, city, and postal code checks (Phase 4).
+    - Best practices warnings and recommendations (Phase 5).
+    - HTML report generation summarizing validation results (Phase 6).
+
+- Users or automation agents should **not skip phases**, as each phase provides critical checks or data transformations required for the next stage.
+- Logging or reporting at each phase is recommended to **track progress and flag any corrections needed** before continuing.
+
 
 ### Phase 1: Deep Research
 
@@ -64,86 +91,127 @@ This research phase establishes the conceptual foundation needed before performi
 
 - If the input is a **remote URL**, download the CSV file into the `./input` directory before processing.
 - If the input is a **local file**, continue processing it directly without downloading.
-
 - Normalize all input data to **UTF-8** encoding.
 
-- In the first pass, extract and identify the full set of IP subnets referenced in the input.  
-  These subnets form the **hashing keys** in the internal logical map or dictionary and must be **de-duplicated** so that each subnet is referenced only once.
-
-- Run the following *validation checks* and report any errors or warnings back to the user for correction:
-
-  - Each subnet must parse cleanly as either an IPv4 or IPv6 network, using the language-specific code snippets provided in the `references/` folder.
-  - Subnets must be normalized and displayed to the user in **CIDR slash notation**.
-    - Single-host IPv4 subnets must be represented as `/32`
-    - Single-host IPv6 subnets must be represented as `/128`
-  - Flag **overly large subnets** as potential errors or typos for user review:
-    - **IPv6**: Prefixes shorter than `/64` (for example, `2001:db8::/32`) should be flagged, as they represent an unrealistically large address space for an IP geolocation feed.
-    - **IPv4**: Prefixes shorter than `/24` should be flagged.
-
-- Once validated, store each subnet as a key in a map or dictionary.  
-  The corresponding value should be a custom object containing:
-  - The geolocation attributes associated with the subnet
-  - Any user-provided hints or preferences related to that subnet’s geolocation.
 
 
-### Phase 3: Syntax validation
+### Phase 3: Syntax Validation
 
-#### CSV syntax test using `csvkit` CLI tool
+Syntax validation verifies the **input format and structure** before any geolocation-specific checks. **Critical syntax errors** must halt further processing.
 
-1. Ensure there are 4 columns in the CSV. Comment lines are OK.
-    - The columns may or may not be labeled with a header row.
-    - The implicit headers are `ip_prefix,alpha2code,region,city`.
-    - See example user input CSV in [`example/01-user-input-rfc8805-feed.csv`](example/01-user-input-rfc8805-feed.csv).
+#### CSV Validation
 
-2. Cleanse the CSV by using `csvcut` from the `csvkit` toolset as follows. Note that this single command fixes any linting issues with the CSV while also dropping any column after the fourth column:
+This subsection defines validation rules specific to **CSV-formatted input files** used for RFC 8805 IP geolocation feeds.
+The goal is to ensure the file can be parsed reliably and normalized into a **consistent internal representation**.
 
-    ```shell
-    csvcut -c 1-4 --add-bom example/01-user-input-rfc8805-feed.csv
-    ```
+- **CSV Structure Validation**
+  - If `pandas` is available, use it for CSV parsing.
+  - Otherwise, fall back to Python’s built-in `csv` module.
 
-3. Optionally, remove any comment rows that use a `#` in the first column. Note that this will also remove the header row if present, but headers are optional per RFC 8805:
+  - Ensure the CSV contains **exactly 4 or 5 logical columns**.
+    - Comment lines are allowed.
+    - A header row **may or may not** be present.
+    - If no header row exists, assume the implicit column order:
+      ```
+      ip_prefix, alpha2code, region, city, postal code (deprecated)
+      ```
+    - Refer to the example input file:
+      [`example/01-user-input-rfc8805-feed.csv`](example/01-user-input-rfc8805-feed.csv)
 
-    ```shell
-    csvgrep --invert-match -c 1 -r '#' example/01-user-input-rfc8805-feed.csv
-    ```
+- **CSV Cleansing and Normalization**
+  - Clean and normalize the CSV using Python logic equivalent to the following operations:
+    - Select only the **first five columns**, dropping any columns beyond the fifth.
+    - Write the output file with a **UTF-8 BOM**.
+    - Optionally remove comment rows where the **first column begins with `#`**.
+    - This will also remove a header row if it begins with `#`.
 
-4. Do not allow CSVs with a fifth column for `postal_code` or ZIP code to proceed past this stage. If the user asks why, explain:
-    - [Section 2.1.1.5 of RFC 8805](https://www.rfc-editor.org/rfc/rfc8805.txt) explicitly deprecates postal/ZIP codes.
-    - Postal codes can represent very small populations, so they are not considered privacy-safe when mapping IP address ranges (which are statistical in nature) to low-population-density geographical regions.
+- **Notes**
+  - Both implementation paths (`pandas` and built-in `csv`) must write output using
+    the `utf-8-sig` encoding to ensure a **UTF-8 BOM** is present.
 
-### Phase 4: Semantic validation
+#### IP Validation
+  - Extract and identify the full set of **IP subnets** referenced in the input.
+  - These subnets act as **hashing keys** in an internal map or dictionary.
+  - All subnets must be **de-duplicated** so each subnet is referenced only once.
 
-Validate geolocation information, accuracy, place names, and ISO codes.
+  - **Validation Checks**
+    - Each subnet must parse cleanly as either an **IPv4 or IPv6 network** using the language-specific code snippets in the `references/` folder.
+    - Subnets must be normalized and displayed in **CIDR slash notation**.
+      - Single-host IPv4 subnets must be represented as **`/32`**
+      - Single-host IPv6 subnets must be represented as **`/128`**
+    - Flag **overly large subnets** as potential errors or typos for user review:
+      - **IPv6**: Prefixes shorter than `/64` (for example, `2001:db8::/32`) should be flagged, as they represent an unrealistically large address space for an IP geolocation feed.
+      - **IPv4**: Prefixes shorter than `/24` should be flagged.
 
-#### Locally-available data tables
+  - **Subnet Storage**
+    - Once validated, store each subnet as a **key** in a map or dictionary.
+    - The corresponding value must be a **custom object** containing:
+      - Geolocation attributes for the subnet
+      - Any user-provided hints or preferences related to that subnet’s geolocation.
 
-- [`assets/iso3166-1.json`](assets/iso3166-1.json): JSON array of countries/territories with ISO codes. Each object has a 2-letter country code in `alpha_2`. This is the superset of valid `alpha2code` values in an RFC 8805 CSV. Other attributes include `flag` (flag emoji) and `name` (short name).
+### Phase 4: Semantic Validation
 
-- [`assets/iso3166-2.json`](assets/iso3166-2.json): JSON array of subdivisions with ISO-assigned 2- or 3-letter codes. Each object has `code` (e.g., `US-CA`), which is the superset of valid `region` values in an RFC 8805 CSV. `name` is the short name.
+Validate **geolocation information**, **accuracy**, **place names**, and **ISO codes**.
+Semantic validation must run only after **syntax validation** completes successfully.
 
-#### Country code validation
+#### Country Code Validation
+  - Use the locally available data table [`assets/iso3166-1.json`](assets/iso3166-1.json) for validation.
+    - JSON array of countries and territories with ISO codes
+    - Each object includes:
+      - `alpha_2`: two-letter country code
+      - `name`: short country name
+      - `flag`: flag emoji
+    - This file represents the **superset of valid `alpha2code` values** for an RFC 8805 CSV
+  - Validate `alpha2code` (RFC 8805 Section 2.1.1.2) against the `alpha_2` attribute.
+  - Sample validation code is available in
+    [`references/snippets-*.md`](references).
+  - Flag an `alpha2code` not present in the `alpha_2` set as **ERROR**.
+  - Flag an empty `alpha2code` as **WARNING**.
+    - RFC 8805 allows empty values when geolocation should not be attempted
+      (for example, infrastructure devices such as routers).
 
-- Validate `alpha2code` (RFC 8805 Section 2.1.1.2) against [`assets/iso3166-1.json`](assets/iso3166-1.json), specifically the `alpha_2` JSON attribute. Sample code snippets are available in [references/snippets-*.md](references).
-- Flag an `alpha2code` not in the data file's `alpha_2` set as ERROR. Flag an empty `alpha2code` as WARNING (the RFC allows empty values when geolocation should not be attempted, e.g., for routers).
+#### Region Code Validation
+  - Use the locally available data table [`assets/iso3166-2.json`](assets/iso3166-2.json) for validation.
+    - JSON array of country subdivisions with ISO-assigned codes
+    - Each object includes:
+      - `code`: subdivision code prefixed with country code (for example, `US-CA`)
+      - `name`: short subdivision name
+    - This file represents the **superset of valid `region` values** for an RFC 8805 CSV
+  - If a `region` value is provided (RFC 8805 Section 2.1.1.3):
+    - Validate that the format matches `{COUNTRY}-{SUBDIVISION}`
+      (for example, `US-CA`, `AU-NSW`).
+    - Validate the value against the `code` attribute(already prefixed with the country code).
 
-#### Region code validation
+#### City Name Validation
+  - Flag placeholder values as **ERROR**:
+    - `undefined`, `Please select`, `null`, `N/A`, `TBD`, `unknown`
+  - Flag truncated names, abbreviations, or airport codes as **ERROR**:
+    - `LA`, `Frft`, `sin01`, `LHR`, `SIN`, `MAA`
+  - Flag inconsistent casing or formatting as **WARNING**:
+    - `HongKong` vs `Hong Kong` vs `香港`
+  - There is currently **no authoritative dataset** available for validating city names.
 
-- If a `region` is provided (RFC 8805 Section 2.1.1.3), validate that the format matches `{COUNTRY}-{SUBDIVISION}` (e.g., `US-CA`, `AU-NSW`).
-- Validate against [`assets/iso3166-2.json`](assets/iso3166-2.json), matching the `code` JSON attribute (already prefixed with the country code).
+#### Postal Code Validation
+  - RFC 8805 Section 2.1.1.5 explicitly **deprecates postal or ZIP codes**.
+  - Postal codes can represent very small populations and are **not considered privacy-safe**
+    for mapping IP address ranges, which are statistical in nature.
+  - If a postal code is present:
+    - Produce an **ERROR** indicating that postal codes are deprecated.
+    - Indicate that the field should be **removed for privacy reasons**.
 
-#### City name validation
+### Phase 5: Best Practices Scan
 
-- Flag placeholder values as ERROR: `undefined`, `Please select`, `null`, `N/A`, `TBD`, `unknown`.
-- Flag truncated/abbreviated names or airport codes as ERROR: `LA`, `Frft`, `sin01`, `LHR`, `SIN`, `MAA`.
-- Flag inconsistent casing as WARNING: `HongKong` vs `Hong Kong` vs `香港`.
-- There is no built-in dataset for validating city names at this time.
+- **Region Code Recommendations**
+  - Recommend **adding region codes** whenever a city is specified.
+  - Exclude **small-sized territories** (by area or population) where state/province usage is uncommon, e.g., `SG`, `AQ`, `CK`.
 
-### Phase 5: Best practices scan
+- **Subnet Confirmation**
+  - Recommend confirming with the user when a subnet is left **unspecified for all geographical columns**.
+    - Warn the user whether they **intend for the subnet to remain un-geolocated** (literal interpretation of RFC 8805),  
+      or whether they **forgot to specify** the country, state, or city for it.
 
-- Recommend adding region codes when a city is specified; exclude small-sized territories (by size or population) where the use of state/provinces isn't common (e.g SG, AQ, CK).
-- Recommend confirmation from the user when a subnet is left unspecified for all geographical columns, do they really wish for the world to not geolocate it (literal interpretation of RFC 8805)? Or is it that they forget to specify the country,state,city names for it?
 
-### Phase 6: Output format
+### Phase 6: HTML Report Generation
 
 Generate an HTML validation report with the following structure. Use modern web standards (HTML5, and W3C Web APIs) with inline CSS to create minimal file clutter. OK to generate inline HTML report if the UI supports it; otherwise write out the .html to the working directory or open it for the user using the default open-with-browser system action.
 
