@@ -28,7 +28,7 @@ This skill validates an IP geolocation feed provided in CSV format by ensuring t
 
 ## Prerequisite: CLI Tools and/or Languages
 
-- **Python** is required.
+- **Python 3** is required.
 
 ## Processing Pipeline: Sequential Phase Execution
 
@@ -208,7 +208,7 @@ Semantic validation must run only after **syntax validation** completes successf
 
 - **Region Code Recommendations**
   - Recommend **adding region codes** whenever a city is specified.
-  - Exclude **small-sized territories** (by area or population) where state/province usage is uncommon, e.g., `SG`, `AQ`, `CK`.
+  - Ignore the absence of region code when country code matches a **small-sized territory** (by area or population) where state/province usage is uncommon. Load and use the JSON array of 2-letter country codes in [assets/small-territories.json](assets/small-territories.json) for this check.
 
 - **Subnet Confirmation**
   - Recommend confirming with the user when a subnet is left **unspecified for all geographical columns**.
