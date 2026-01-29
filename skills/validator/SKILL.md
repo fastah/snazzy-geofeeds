@@ -57,16 +57,17 @@ This skill validates an IP geolocation feed provided in CSV format by ensuring t
     Generate a **HTML report** summarizing validation results, errors, and warnings.
 
 - **Validation Script Generation**
-  - Generate a **single validation script** that incorporates **all steps from Phases 3–6**.
+  - Generate a **single validation script** that incorporates **all steps from Phases 2–6**.
   - Store the generated script in the `./scripts` directory.
   - The script must include:
-    - CSV and IP syntax checks (Phase 3).
-    - Semantic validations including country, region, city, and postal code checks (Phase 4).
-    - Best practices warnings and recommendations (Phase 5).
-    - HTML report generation summarizing validation results (Phase 6).
+    - Load CSV input — download if a URL is provided, otherwise use local (**Phase 2**).
+    - CSV and IP syntax checks (**Phase 3**).
+    - Semantic validations including country, region, city, and postal code checks (**Phase 4**).
+    - Best practices warnings and recommendations (**Phase 5**).
+    - HTML report generation summarizing validation results (**Phase 6**).
 
 - Users or automation agents should **not skip phases**, as each phase provides critical checks or data transformations required for the next stage.
-- Logging or reporting at each phase is recommended to **track progress and flag any corrections needed** before continuing.
+
 
 
 ### Phase 1: Deep Research
@@ -218,50 +219,116 @@ Semantic validation must run only after **syntax validation** completes successf
 
 ### Phase 6: HTML Report Generation
 
-Generate an HTML validation report with the following structure. Use modern web standards (HTML5, and W3C Web APIs) with inline CSS to create minimal file clutter. OK to generate inline HTML report if the UI supports it; otherwise write out the .html to the working directory or open it for the user using the default open-with-browser system action.
+Generate a **deterministic, self-contained HTML validation report** using **HTML5** and **inline CSS only** (no external assets).  
+If inline rendering is supported by the UI, render directly; otherwise write `validation-report.html` to the working directory and open it using the system default browser.
 
-#### 1. Summary header
 
-Display rolled-up statistics at the top:
+#### Summary Section
 
-- Total entries processed
-- Counts by severity: ERROR, WARNING, INFO (valid entries)
-- Feed metadata: filename, timestamp, IPv4/IPv6 entry counts
-- Geographical accuracy stats - subnets with city-level accuracy, with state-only accuracy, with country-level accurarcy, and "do not geolocate" signalling.
+Render a **fixed metrics panel** at the top of the report, consisting of **four separate tables stacked vertically (top-down)**.
+Each table must appear **one after the other**, never side-by-side.
 
-#### 2. Results table
+##### Table layout and styling requirements
 
-Render a table with one row per CSV entry. Columns:
+-Use `./templates/report_header.html` as the **visual and structural reference** for the metrics panel.
+- All tables must have a **consistent width** across the report.
+- Table width must **fit within the page viewport** and respect horizontal margins.
+- Apply equal **left and right margins** so tables are visually centered.
+- Use a **clean, readable style** suitable for reports:
+  - Clear table borders
+  - Bold header row
+  - Adequate cell padding
+- Do not allow tables to overflow horizontally.
+- Tables must scale cleanly for typical desktop screen widths and printing.
 
-| Column | Description |
-|--------|-------------|
-| Line | Original CSV line number |
-| IP Prefix | The subnet in CIDR notation |
-| Country | `alpha2code` with flag emoji if valid |
-| Region | `region` code |
-| City | City name |
-| Status | ERROR / WARNING / INFO |
-| Messages | Validation messages for this entry. Inferred geographical accuracy. |
+Each table must use a **two-column key–value layout**:
+- **Left column**: metric label
+- **Right column**: computed value only
 
-#### 3. Row grouping and styling
 
-Group rows by severity for user triage:
+###### Feed Metadata
 
-- **ERROR** (red): Invalid entries requiring fixes before publication
-- **WARNING** (yellow): Entries that may need review
-- **INFO** (green): Valid entries with optional suggestions
+- Input file: display the source as a URL if provided; otherwise show the local file path and resolved filename.
+- Timestamp must be UTC, ISO-8601.
 
-Use collapsible sections so users can hide INFO rows and focus on problems.
+| Metric               | Value |
+|----------------------|-------|
+| Input file           |       |
+| Validation timestamp |       |
 
-#### 4. Actionable recommendations
 
-End with a numbered list of specific fixes, e.g.:
+###### Entries
 
-1. "Line 42: Replace country code `UK` with `GB`"
-2. Any other observations and comments.
+| Metric                     | Value |
+|----------------------------|-------|
+| Total entries              |       |
+| IPv4 entries               |       |
+| IPv6 entries               |       |
 
----
 
-**TODO: Clarify the following before implementation:**
+###### Validation Results
 
-- TODO: Add "Copy to clipboard" button for exporting valid 4-column CSV data
+| Metric        | Value |
+|---------------|-------|
+| ERROR count   |       |
+| WARNING count |       |
+| INFO count    |       |
+
+
+###### Geographical Accuracy Classification
+
+| Metric                     | Value |
+|----------------------------|-------|
+| City-level accuracy        |       |
+| Region-level accuracy      |       |
+| Country-level accuracy     |       |
+| Do-not-geolocate entries   |       |
+
+
+#### Results Table
+
+Render a **single, stable, sortable HTML table** with **one row per input CSV entry**.
+- Preserve the **original CSV row order** by default.
+
+Columns **must appear in this exact order**:
+
+| Column    | Description                                               |
+|-----------|-----------------------------------------------------------|
+| Line      | 1-based CSV line number                                   |
+| IP Prefix | Normalized CIDR notation                                  |
+| Country   | `alpha2code` with the corresponding country flag emoji    |
+| Region    | Region code or empty                                      |
+| City      | City name or empty                                        |
+| Severity  | ERROR, WARNING, BEST_PRACTICE, or INFO                    |
+| Messages  | Ordered list of validation messages and inferred accuracy |
+
+- Multiple messages must be rendered as a **bullet list within the cell**.
+- The **Severity** value must reflect the **highest level** raised for that row.
+  - Severity order: `ERROR` > `WARNING` > `BEST_PRACTICE` > `INFO`
+
+##### Filtering and Visual Encoding
+
+- Apply **row-level visual styling** based on severity:
+  - **ERROR**: light red background
+  - **WARNING**: light yellow background
+  - **BEST_PRACTICE**: light blue or neutral background
+  - **INFO**: light green background
+
+- Provide **interactive filters** above the table to show or hide rows by severity:
+  - ERROR
+  - WARNING
+  - BEST_PRACTICE
+  - INFO
+
+- Filtering must:
+  - Operate on the **single table**
+  - Preserve original row order
+  - Toggle visibility only (do not remove rows from the DOM)
+
+
+#### Output Guarantees
+
+- Report must be readable in any modern browser without JavaScript dependencies.
+- No network access is permitted during report generation.
+- All values must be derived **only from validation output**, not recomputed heuristically.
+
