@@ -4,8 +4,8 @@ description: Helps author and validate a CSV-format IP-based geolocation feed fi
 license: Apache-2.0
 metadata:
   author: Sid Mathur <support@getfastah.com>
-  version: "0.1"
-compatibility: Requires Python, csvkit CLI, and access to the internet
+  version: "0.2"
+compatibility: Requires Python 3
 ---
 
 # Validator for RFC 8805 IP Geolocation CSV Feeds
@@ -30,9 +30,40 @@ This skill validates an IP geolocation feed provided in CSV format by ensuring t
 
 - **Python 3** is required.
 
+## Directory Structure and File Management
+
+This skill uses a clear separation between **distribution files** (read-only) and **working files** (generated at runtime).
+
+### Read-Only Directories (Do Not Modify)
+
+The following directories contain static distribution assets. **Do not create, modify, or delete files in these directories**:
+
+| Directory      | Purpose                                                    |
+|----------------|------------------------------------------------------------|
+| `assets/`      | Static data files (ISO codes, Bootstrap CSS/JS, examples)  |
+| `references/`  | RFC specifications and code snippets for reference         |
+| `scripts/`   | Contains executable code that agents can run and HTML template files used as visual references for reports  |
+
+### Working Directories (Generated Content)
+
+All generated, temporary, and output files must be written to these directories:
+
+| Directory       | Purpose                                              |
+|-----------------|------------------------------------------------------|
+| `run/`      | Agent-generated or user-managed validation scripts (Python)                |
+| `run/data/`     | Downloaded CSV files from remote URLs                |
+| `run/report/`   | Generated HTML validation reports                    |
+
+### File Management Rules
+
+1. **Never write to `assets/`, `references/`, or `scripts/`** — these are part of the skill distribution and must remain unchanged.
+2. **All downloaded input files** (from remote URLs) must be saved to `./run/data/`.
+3. **All generated HTML reports** must be saved to `./run/report/`.
+4. **All generated Python scripts** must be saved to `./run/`.
+5. The `run/` directory may be cleared between sessions; do not store permanent data there.
 ## Processing Pipeline: Sequential Phase Execution
 
-- All phases of the skill must be executed **in order**, from Phase 1 through Phase 6.
+- All phases of the skill must be executed **in order**, from Phase 1 through Phase 7.
 - Each phase depends on the successful completion of the previous phase.  
   - For example, **syntax and input validation** must complete before **semantic validation** can run.
 
@@ -54,11 +85,14 @@ This skill validates an IP geolocation feed provided in CSV format by ensuring t
     Recommend missing region codes, confirm user intent for unspecified subnets, and enforce best practices.
 
   - **Phase 6: HTML Report Generation**  
-    Generate a **HTML report** summarizing validation results, errors, and warnings.
+    Generate an HTML report summarizing validation results, errors, and warnings.
+
+  - **Phase 7: Final Consistency Check**
+    Perform a final pass to ensure nothing was missed or left inconsistent.
 
 - **Validation Script Generation**
   - Generate a **single validation script** that incorporates **all steps from Phases 2–6**.
-  - Store the generated script in the `./run/scripts` directory.
+  - Store the generated script in the `./scripts/` directory.
   - The script must include:
     - Load CSV input — download if a URL is provided, otherwise use local (**Phase 2**).
     - CSV and IP syntax checks (**Phase 3**).
@@ -90,7 +124,7 @@ This research phase establishes the conceptual foundation needed before performi
   - A local CSV file
   - A remote URL pointing to a CSV file
 
-- If the input is a **remote URL**, download the CSV file into the `./run/data` directory before processing.
+- If the input is a **remote URL**, download the CSV file into the `./run/data/` directory before processing.
 - If the input is a **local file**, continue processing it directly without downloading.
 - Normalize all input data to **UTF-8** encoding.
 
@@ -107,7 +141,7 @@ The goal is to ensure the file can be parsed reliably and normalized into a **co
 
 - **CSV Structure Validation**
   - If `pandas` is available, use it for CSV parsing.
-  - Otherwise, fall back to Python’s built-in `csv` module.
+  - Otherwise, fall back to Python's built-in `csv` module.
 
   - Ensure the CSV contains **exactly 4 or 5 logical columns**.
     - Comment lines are allowed.
@@ -117,7 +151,7 @@ The goal is to ensure the file can be parsed reliably and normalized into a **co
       ip_prefix, alpha2code, region, city, postal code (deprecated)
       ```
     - Refer to the example input file:
-      [`example/01-user-input-rfc8805-feed.csv`](example/01-user-input-rfc8805-feed.csv)
+      [`assets/example/01-user-input-rfc8805-feed.csv`](assets/example/01-user-input-rfc8805-feed.csv)
 
 - **CSV Cleansing and Normalization**
   - Clean and normalize the CSV using Python logic equivalent to the following operations:
@@ -153,7 +187,7 @@ The goal is to ensure the file can be parsed reliably and normalized into a **co
     - Once validated, store each subnet as a **key** in a map or dictionary.
     - The corresponding value must be a **custom object** containing:
       - Geolocation attributes for the subnet
-      - Any user-provided hints or preferences related to that subnet’s geolocation.
+      - Any user-provided hints or preferences related to that subnet's geolocation.
 
 ### Phase 4: Semantic Validation
 
@@ -170,7 +204,7 @@ Semantic validation must run only after **syntax validation** completes successf
     - This file represents the **superset of valid `alpha2code` values** for an RFC 8805 CSV
   - Validate `alpha2code` (RFC 8805 Section 2.1.1.2) against the `alpha_2` attribute.
   - Sample validation code is available in
-    [`references/snippets-*.md`](references).
+    [`references/snippets-python3.md`](references/snippets-python3.md).
   - Flag an `alpha2code` not present in the `alpha_2` set as **ERROR**.
   - Flag an empty `alpha2code` as **WARNING**.
     - RFC 8805 allows empty values when geolocation should not be attempted
@@ -186,7 +220,7 @@ Semantic validation must run only after **syntax validation** completes successf
   - If a `region` value is provided (RFC 8805 Section 2.1.1.3):
     - Validate that the format matches `{COUNTRY}-{SUBDIVISION}`
       (for example, `US-CA`, `AU-NSW`).
-    - Validate the value against the `code` attribute(already prefixed with the country code).
+    - Validate the value against the `code` attribute (already prefixed with the country code).
 
 #### City Name Validation
   - Flag placeholder values as **ERROR**:
@@ -219,13 +253,13 @@ Semantic validation must run only after **syntax validation** completes successf
 
 ### Phase 6: HTML Report Generation
 
-- Generate a **deterministic, self-contained HTML validation report** using **HTML5** and **inline CSS only** (no external assets).  
+- Generate a **deterministic, self-contained HTML validation report**.
+- The report must use **local Bootstrap 5.3.8 assets** bundled in [`assets/bootstrap-5.3.8-dist/`](assets/bootstrap-5.3.8-dist/) for styling.
+  - Reference the local CSS file: `assets/bootstrap-5.3.8-dist/css/bootstrap.min.css`
+  - Reference the local JS file (if needed): `assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js`
+  - **Do not use CDN links** — the report must work offline without network access.
 - If inline rendering is supported by the UI, render the report directly. Otherwise, write the HTML report to `./run/report/`, using the **input CSV filename** (with a `.html` extension), and open it with the system default browser.
-- Where applicable, use **Bootstrap (v5.3.x)** classes and components to style the report for readability and consistency.
-  - Prefer layout, tables, badges, alerts, and collapsible UI elements from Bootstrap.
-  - Do not require a build step; use CDN-compatible Bootstrap assets only.
-  - Reference: [Bootstrap documentation](https://raw.githubusercontent.com/twbs/bootstrap/refs/tags/v5.3.8/site/src/content/docs/getting-started/introduction.mdx)
-
+- Prefer Bootstrap layout classes, tables, badges, alerts, and collapsible UI elements for readability and consistency.
 
 
 #### Summary Section
@@ -297,7 +331,7 @@ Each table must use a **two-column key–value layout**:
 
 Render a **single, stable, sortable HTML table** with **one row per input CSV entry**.
 - Preserve the **original CSV row order** by default.
-- Use `./templates/report_table.html` as the **visual and structural reference** for table.
+- Use `./templates/report_table.html` as the **visual and structural reference** for the table.
 
 Columns **must appear in this exact order**:
 
@@ -336,7 +370,7 @@ The **ISO 3166-2 subdivision code** (for example, `US-CA`).
 
   - Auto-suggestion (Fallback)
     - If the CSV value is **empty or missing**:
-      - Invoke the [Blackbox](https://mcp.mapbox.com/mcp) MCP server **reverse-geocode** tool using the **City** field.
+      - Invoke the [Mapbox](https://mcp.mapbox.com/mcp) MCP server **reverse-geocode** tool using the **City** field.
       - Populate the dropdown with **at least three suggested region codes**.
       - Suggestions SHOULD be ordered by **confidence or relevance**, when available.
       - Leave the field empty if no region is specified or applicable.
@@ -379,10 +413,15 @@ The **ISO 3166-2 subdivision code** (for example, `US-CA`).
 
 #### Output Guarantees
 
-- Report must be readable in any modern browser without JavaScript dependencies.
-- No network access is permitted during report generation.
+- Report must be readable in any modern browser without external network dependencies.
+- All Bootstrap CSS/JS must be referenced from local `assets/bootstrap-5.3.8-dist/` files.
 - All values must be derived **only from validation output**, not recomputed heuristically.
 
 ### Phase 7: Final Consistency and Completeness Check
 
 Perform a final pass over the validated data and generated outputs to ensure nothing was missed or left inconsistent.
+
+- Verify that all CSV rows have been processed and appear in the report.
+- Confirm that error/warning/info counts in the summary match the actual row severities.
+- Ensure no duplicate entries exist in the results table.
+- Validate that all file paths and references in the report are correct.

@@ -4,17 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RFC 8805 Validation Report</title>
+    
+    <!-- Local Bootstrap 5.3.8 CSS -->
+    <link href="../assets/bootstrap-5.3.8-dist/css/bootstrap.min.css" rel="stylesheet">
+    
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0;
+            padding: 20px;
             background-color: #f5f5f5;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
             background-color: #ffffff;
-            padding: 20px;
+            padding: 30px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
@@ -22,73 +27,70 @@
             color: #333333;
             border-bottom: 3px solid #0066cc;
             padding-bottom: 10px;
+            margin-bottom: 30px;
         }
         h2 {
             color: #555555;
             margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.25rem;
         }
-        table {
+        .metrics-table {
             width: 100%;
+            max-width: 600px;
             border-collapse: collapse;
-            margin: 15px 0;
-        }
-        th {
-            background-color: #0066cc;
-            color: #ffffff;
-            padding: 12px;
-            text-align: left;
-            font-weight: bold;
-        }
-        td {
-            padding: 10px;
-            border: 1px solid #dddddd;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        .error-bg {
-            background-color: #ffcccc !important;
-        }
-        .warning-bg {
-            background-color: #ffffcc !important;
-        }
-        .info-bg {
-            background-color: #ccffcc !important;
+            margin-bottom: 20px;
         }
         .metrics-table td {
-            padding: 8px 12px;
+            padding: 10px 15px;
+            border: 1px solid #dee2e6;
+        }
+        .metrics-table tr:nth-child(even) {
+            background-color: #f9f9f9;
         }
         .metrics-label {
             font-weight: bold;
-            width: 40%;
+            width: 50%;
+            background-color: #f8f9fa;
         }
-        .recommendations {
-            background-color: #f0f8ff;
-            padding: 15px;
-            border-left: 4px solid #0066cc;
-            margin: 20px 0;
+        .metrics-value {
+            width: 50%;
+        }
+        .count-error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .count-warning {
+            color: #fd7e14;
+            font-weight: bold;
+        }
+        .count-info {
+            color: #28a745;
+            font-weight: bold;
         }
         .footer {
             margin-top: 40px;
             font-size: 0.9em;
             color: #777777;
             text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>RFC 8805 IP Geolocation Feed Validation Report</h1>
+        <h1>IP Geolocation Report</h1>
 
         <h2>Feed Metadata</h2>
         <table class="metrics-table">
             <tr>
                 <td class="metrics-label">Input file</td>
-                <td>C:\ip-geofeed-skills\skills\validator\input\geolocation.csv</td>
+                <td class="metrics-value">geolocation.csv</td>
             </tr>
             <tr>
-                <td class="metrics-label">Validation timestamp</td>
-                <td>2026-01-29T22:02:40.209106+00:00</td>
+                <td class="metrics-label">Tuning timestamp</td>
+                <td class="metrics-value">2026-01-31T12:00:00.000000+00:00</td>
             </tr>
         </table>
 
@@ -96,31 +98,31 @@
         <table class="metrics-table">
             <tr>
                 <td class="metrics-label">Total entries</td>
-                <td>1811</td>
+                <td class="metrics-value">1811</td>
             </tr>
             <tr>
                 <td class="metrics-label">IPv4 entries</td>
-                <td>1246</td>
+                <td class="metrics-value">1246</td>
             </tr>
             <tr>
                 <td class="metrics-label">IPv6 entries</td>
-                <td>565</td>
+                <td class="metrics-value">565</td>
             </tr>
         </table>
 
-        <h2>Validation Results</h2>
+        <h2>Results</h2>
         <table class="metrics-table">
             <tr>
                 <td class="metrics-label">ERROR count</td>
-                <td style="color: red; font-weight: bold;">77</td>
+                <td class="metrics-value count-error">77</td>
             </tr>
             <tr>
                 <td class="metrics-label">WARNING count</td>
-                <td style="color: orange; font-weight: bold;">20</td>
+                <td class="metrics-value count-warning">20</td>
             </tr>
             <tr>
                 <td class="metrics-label">INFO count</td>
-                <td style="color: green; font-weight: bold;">1714</td>
+                <td class="metrics-value count-info">1714</td>
             </tr>
         </table>
 
@@ -128,25 +130,28 @@
         <table class="metrics-table">
             <tr>
                 <td class="metrics-label">City-level accuracy</td>
-                <td>271</td>
+                <td class="metrics-value">271</td>
             </tr>
             <tr>
                 <td class="metrics-label">Region-level accuracy</td>
-                <td>6</td>
+                <td class="metrics-value">6</td>
             </tr>
             <tr>
                 <td class="metrics-label">Country-level accuracy</td>
-                <td>1534</td>
+                <td class="metrics-value">1534</td>
             </tr>
             <tr>
                 <td class="metrics-label">Do-not-geolocate entries</td>
-                <td>0</td>
+                <td class="metrics-value">0</td>
             </tr>
         </table>
 
         <div class="footer">
-            Generated by RFC 8805 Validator
+            Generated by Fastah's IP Geofeed Tuner AI Skill
         </div>
     </div>
+    
+    <!-- Local Bootstrap JS (optional) -->
+    <script src="../assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
