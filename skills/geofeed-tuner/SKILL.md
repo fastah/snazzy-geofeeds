@@ -264,7 +264,6 @@ This phase applies **opinionated recommendations** beyond RFC 8805 — suggestio
 - If inline rendering is supported by the UI, render the report directly. Otherwise, write the HTML report to `./run/report/`, using the **input CSV filename** (with a `.html` extension), and open it with the system default browser.
 - Prefer Bootstrap layout classes, tables, badges, alerts, and collapsible UI elements for readability and consistency.
 
-
 #### Summary Section
 
 Render a **fixed metrics panel** at the top of the report, consisting of **four separate tables stacked vertically (top-down)**.
@@ -347,6 +346,12 @@ Columns **must appear in this exact order**:
 | City      | City name or empty                                        |
 | Status    | ERROR, WARNING, SUGGESTION, or OK                         |
 | Messages  | Ordered list of issues and suggestions                    |
+
+##### Large Feed Optimization
+
+- If the input CSV contains **10,000 or more entries**, the Results Table MUST include **only rows with issues** (ERROR, WARNING, SUGGESTION status) to prevent browser performance degradation.
+- OK entries are excluded from the table but **still counted** in the summary statistics.
+- This threshold balances completeness with browser rendering performance — a 10K-row table renders smoothly, while 100K+ rows cause browsers to hang.
 
 ##### Column Definitions
 
